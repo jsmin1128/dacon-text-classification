@@ -1,0 +1,13 @@
+.DS_Store
+__pycache__/
+*.py[cod]
+.ipynb_checkpoints/
+
+data/raw/*
+!data/raw/.gitkeep
+outputs/
+models/
+cache/
+*.npy
+*.pkl
+*.joblib
