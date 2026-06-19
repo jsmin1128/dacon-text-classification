@@ -9,7 +9,7 @@ def make_xgb_classifier(y: np.ndarray) -> XGBClassifier:
     return XGBClassifier(
         objective="binary:logistic",
         eval_metric="auc",
-        tree_method="gpu_hist",
+        device="cuda",
         learning_rate=0.05,
         n_estimators=1200,
         max_depth=7,
@@ -20,4 +20,5 @@ def make_xgb_classifier(y: np.ndarray) -> XGBClassifier:
         min_child_weight=1.0,
         random_state=SEED,
         scale_pos_weight=pos_w,
+        early_stopping_rounds=100,
     )

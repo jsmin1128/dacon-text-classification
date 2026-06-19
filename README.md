@@ -14,6 +14,8 @@ DACON 텍스트 분류 대회를 위한 학습/제출 생성 프로젝트입니�
 │   ├── cache/                     # 피처/임베딩 캐시 저장 위치
 │   ├── models/                    # 모델 저장 위치
 │   └── submissions/               # 제출 파일 저장 위치
+├── scripts/
+│   └── train_tfidf_xgb.py         # CLI 엔트리포인트
 ├── src/
 │   └── dacon/
 │       ├── config.py              # 프로젝트 경로, seed, 기본 출력 경로
@@ -21,15 +23,17 @@ DACON 텍스트 분류 대회를 위한 학습/제출 생성 프로젝트입니�
 │       ├── features.py            # TF-IDF 및 수치 피처 생성
 │       ├── models.py              # XGBoost 모델 생성
 │       ├── training.py            # fold 학습, 검증, 테스트 예측
-│       ├── submission.py          # 제출 파일 생성
-│       └── train_tfidf_xgb.py     # CLI 엔트리포인트
+│       └── submission.py          # 제출 파일 생성
+├── pyproject.toml
 ├── requirements.txt
 └── README.md
 ```
 
 ## 데이터
 
-학습과 제출에 필요한 CSV 파일은 `data/raw/`에 로컬로 둡니다.
+데이터는 아래 Google Drive에서 다운로드 후 `data/raw/`에 위치시킵니다.
+
+[Google Drive 데이터 폴더](https://drive.google.com/drive/folders/1bep1Mjw42uRO7M1a5eMcKaf_FZK3fVBO?usp=sharing)
 
 필수 파일:
 
@@ -51,46 +55,46 @@ sample_submission.csv: ID, generated
 
 ## 환경 설정
 
-가상환경을 만들고 의존성을 설치합니다.
+Python 3.10 이상이 필요합니다.
+
+macOS에서는 XGBoost 실행에 `libomp`가 필요합니다:
 
 ```bash
-python3 -m venv .venv
+brew install libomp
+```
+
+가상환경을 만들고 의존성을 설치합니다:
+
+```bash
+python3.10 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
+pip install -e .
 ```
 
-필요 패키지:
-
-```text
-numpy
-pandas
-scipy
-scikit-learn
-xgboost
-tqdm
-```
+결과를 완전히 재현하려면 `requirements.txt`로 버전을 고정합니다. 최신 버전으로 설치하려면 `pip install -e .`만 실행합니다.
 
 ## 실행 방법
 
 기본 실행:
 
 ```bash
-PYTHONPATH=src python -m dacon.train_tfidf_xgb
+python scripts/train_tfidf_xgb.py
 ```
 
 옵션 예시:
 
 ```bash
-PYTHONPATH=src python -m dacon.train_tfidf_xgb \
+python scripts/train_tfidf_xgb.py \
   --data-dir data/raw \
   --output outputs/submissions/ensemble_submission.csv \
   --n-splits 5
 ```
 
-도움말:
+데이터가 바뀐 경우 캐시를 무시하고 재계산합니다:
 
 ```bash
-PYTHONPATH=src python -m dacon.train_tfidf_xgb --help
+python scripts/train_tfidf_xgb.py --no-cache
 ```
 
 ## 학습 흐름
@@ -113,34 +117,23 @@ numeric: len_char, len_word, ratio_digit, ratio_upper, ratio_punc, ratio_sym
 
 ## 산출물
 
-기본 제출 파일:
+학습 완료 후 생성되는 파일:
 
 ```text
-outputs/submissions/ensemble_submission.csv
+outputs/submissions/ensemble_submission.csv   # 제출 파일
+outputs/models/fold_1.json ~ fold_N.json      # fold별 학습 모델 (N = n-splits)
+outputs/cache/fold_1_tr.npz ...               # fold별 TF-IDF 행렬 캐시
 ```
 
-`outputs/` 아래는 학습 결과물 저장용입니다. 필요하면 모델 파일과 캐시 파일도 여기에 둡니다.
+캐시가 있으면 두 번째 실행부터 TF-IDF 재계산을 건너뜁니다. 데이터가 바뀌면 `--no-cache` 플래그를 사용하거나 `outputs/cache/`를 직접 비웁니다.
 
 ## 주의사항
 
 현재 XGBoost 설정은 GPU를 사용합니다.
 
 ```python
-tree_method="gpu_hist"
+device="cuda"
 ```
 
-GPU가 없으면 `src/dacon/models.py`에서 CPU용 설정으로 바꿔야 합니다.
+GPU가 없으면 `src/dacon/models.py`에서 해당 파라미터를 제거하거나 `device="cpu"`로 바꿔야 합니다.
 
-## 검증
-
-문법 확인:
-
-```bash
-python -m compileall -q src
-```
-
-CLI 확인:
-
-```bash
-PYTHONPATH=src python -m dacon.train_tfidf_xgb --help
-```

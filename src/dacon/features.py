@@ -10,7 +10,7 @@ def length_feats(df: pd.DataFrame) -> pd.DataFrame:
     return pd.DataFrame(
         {
             "len_char": txt.str.len(),
-            "len_word": txt.str.split().apply(len),
+            "len_word": txt.fillna("").str.split().str.len(),
             "ratio_digit": txt.str.count(r"\d") / (txt.str.len() + 1),
             "ratio_upper": txt.str.count(r"[A-Z]") / (txt.str.len() + 1),
             "ratio_punc": txt.str.count(r"[\.\,\!\?\;]") / (txt.str.len() + 1),
