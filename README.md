@@ -33,7 +33,7 @@ DACON 텍스트 분류 대회를 위한 학습/제출 생성 프로젝트입니�
 
 데이터는 아래 Google Drive에서 다운로드 후 `data/raw/`에 위치시킵니다.
 
-[Google Drive 데이터 폴더](https://drive.google.com/drive/folders/1bep1Mjw42uRO7M1a5eMcKaf_FZK3fVBO?usp=sharing)
+[Google Drive 데이터 폴더](https://drive.google.com/drive/folders/1RVRPvS0hFV637F2cD7aNigUj9R-_b7nT?usp=sharing)
 
 필수 파일:
 
