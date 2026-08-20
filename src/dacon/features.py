@@ -28,14 +28,18 @@ def make_tfidf_vectorizers() -> tuple[TfidfVectorizer, TfidfVectorizer]:
         analyzer="char",
         ngram_range=(3, 5),
         min_df=3,
-        max_features=200_000,
+        # 200K -> 50K: RTX 3090(24GB)에서 GPU 학습이 가능하도록 축소.
+        # TF-IDF는 넓은 sparse 데이터라 XGBoost GPU DMatrix(ELLPACK)와 histogram이
+        # 피처수에 비례해 GPU 메모리를 크게 먹는다(실측: 14만 피처는 24GB 초과 OOM).
+        # 7만 차원 규모에서 GPU 학습이 안정적으로 완료됨을 실측 확인.
+        max_features=50_000,
         dtype=np.float32,
     )
     word_tfidf = TfidfVectorizer(
         analyzer="word",
         tokenizer=None,
         ngram_range=(1, 2),
-        max_features=40_000,
+        max_features=20_000,
         min_df=2,
         dtype=np.float32,
     )
