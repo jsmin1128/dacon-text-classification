@@ -9,8 +9,9 @@ from sklearn.metrics import roc_auc_score
 from sklearn.model_selection import StratifiedKFold
 from tqdm.auto import tqdm
 
-from dacon.config import SEED, TrainConfig
+from dacon.config import DEFAULT_EXPERIMENT_LOG, SEED, TrainConfig
 from dacon.data import load_train_test
+from dacon.experiment import log_experiment
 from dacon.features import build_fold_matrices, length_feats
 from dacon.models import make_xgb_classifier
 
@@ -39,6 +40,7 @@ def train_and_predict(
     cache_dir: Path,
     cfg: TrainConfig | None = None,
     use_cache: bool = True,
+    experiment_log: Path | None = None,
 ) -> np.ndarray:
     cfg = cfg or TrainConfig()
     n_splits = cfg.n_splits
@@ -54,6 +56,7 @@ def train_and_predict(
 
     oof = np.zeros(len(train))
     preds = np.zeros(len(test))
+    fold_aucs: list[float] = []
     splits = list(skf.split(train, y))
     tqdm_folds = tqdm(splits, desc="Folds")
 
@@ -88,6 +91,7 @@ def train_and_predict(
 
         val_pred = model.predict_proba(X_va)[:, 1]
         fold_auc = roc_auc_score(y[val_idx], val_pred)
+        fold_aucs.append(fold_auc)
         logging.info("  Fold %s AUC = %.5f", fold_num, fold_auc)
 
         oof[val_idx] = val_pred
@@ -96,5 +100,11 @@ def train_and_predict(
         del X_tr, X_va, X_te, model
         gc.collect()
 
-    logging.info("\nALL FOLD OOF AUC = %.5f", roc_auc_score(y, oof))
+    oof_auc = roc_auc_score(y, oof)
+    logging.info("\nALL FOLD OOF AUC = %.5f", oof_auc)
+
+    log_path = experiment_log or DEFAULT_EXPERIMENT_LOG
+    log_experiment(cfg, fold_aucs, oof_auc, log_path)
+    logging.info("Logged experiment: %s", log_path)
+
     return preds.clip(0, 1)

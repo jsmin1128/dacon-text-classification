@@ -9,6 +9,7 @@ DEFAULT_DATA_DIR = PROJECT_ROOT / "data" / "raw"
 DEFAULT_OUTPUT_PATH = PROJECT_ROOT / "outputs" / "submissions" / "ensemble_submission.csv"
 DEFAULT_MODELS_DIR = PROJECT_ROOT / "outputs" / "models"
 DEFAULT_CACHE_DIR = PROJECT_ROOT / "outputs" / "cache"
+DEFAULT_EXPERIMENT_LOG = PROJECT_ROOT / "outputs" / "experiments.jsonl"
 
 
 @dataclass
