@@ -4,6 +4,8 @@ from scipy import sparse
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.preprocessing import StandardScaler
 
+from dacon.config import FeatureConfig
+
 
 def length_feats(df: pd.DataFrame) -> pd.DataFrame:
     txt = df["full_text"]
@@ -23,24 +25,24 @@ def concat_title_text(df: pd.DataFrame) -> np.ndarray:
     return (df["title"].fillna("") + " " + df["full_text"].fillna("")).values
 
 
-def make_tfidf_vectorizers() -> tuple[TfidfVectorizer, TfidfVectorizer]:
+def make_tfidf_vectorizers(
+    cfg: FeatureConfig | None = None,
+) -> tuple[TfidfVectorizer, TfidfVectorizer]:
+    # 피처수/ngram/min_df는 전부 FeatureConfig에서 관리한다(GPU 메모리 근거는 config.py 참고).
+    cfg = cfg or FeatureConfig()
     char_tfidf = TfidfVectorizer(
         analyzer="char",
-        ngram_range=(3, 5),
-        min_df=3,
-        # 200K -> 50K: RTX 3090(24GB)에서 GPU 학습이 가능하도록 축소.
-        # TF-IDF는 넓은 sparse 데이터라 XGBoost GPU DMatrix(ELLPACK)와 histogram이
-        # 피처수에 비례해 GPU 메모리를 크게 먹는다(실측: 14만 피처는 24GB 초과 OOM).
-        # 7만 차원 규모에서 GPU 학습이 안정적으로 완료됨을 실측 확인.
-        max_features=50_000,
+        ngram_range=cfg.char_ngram,
+        min_df=cfg.char_min_df,
+        max_features=cfg.char_max_features,
         dtype=np.float32,
     )
     word_tfidf = TfidfVectorizer(
         analyzer="word",
         tokenizer=None,
-        ngram_range=(1, 2),
-        max_features=20_000,
-        min_df=2,
+        ngram_range=cfg.word_ngram,
+        max_features=cfg.word_max_features,
+        min_df=cfg.word_min_df,
         dtype=np.float32,
     )
     return char_tfidf, word_tfidf
@@ -53,9 +55,10 @@ def build_fold_matrices(
     val_idx: np.ndarray,
     num_feats_train: pd.DataFrame,
     num_feats_test: pd.DataFrame,
+    cfg: FeatureConfig | None = None,
 ) -> tuple[sparse.csr_matrix, sparse.csr_matrix, sparse.csr_matrix]:
     tr_df, val_df = train.iloc[tr_idx], train.iloc[val_idx]
-    char_tfidf, word_tfidf = make_tfidf_vectorizers()
+    char_tfidf, word_tfidf = make_tfidf_vectorizers(cfg)
     scaler = StandardScaler(with_mean=False)
 
     X_char_tr = char_tfidf.fit_transform(concat_title_text(tr_df))

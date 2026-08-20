@@ -9,7 +9,7 @@ from sklearn.metrics import roc_auc_score
 from sklearn.model_selection import StratifiedGroupKFold
 from tqdm.auto import tqdm
 
-from dacon.config import SEED
+from dacon.config import SEED, TrainConfig
 from dacon.data import load_train_test
 from dacon.features import build_fold_matrices, length_feats
 from dacon.models import make_xgb_classifier
@@ -35,18 +35,20 @@ def _save_fold_cache(cache_dir: Path, fold: int, X_tr, X_va, X_te) -> None:
 
 def train_and_predict(
     data_dir: Path,
-    n_splits: int,
     models_dir: Path,
     cache_dir: Path,
+    cfg: TrainConfig | None = None,
     use_cache: bool = True,
 ) -> np.ndarray:
+    cfg = cfg or TrainConfig()
+    n_splits = cfg.n_splits
     train, test = load_train_test(data_dir)
     num_feats_train = length_feats(train)
     num_feats_test = length_feats(test)
 
     y = train["generated"].values
     groups = train["title"].fillna("").values
-    sgkf = StratifiedGroupKFold(n_splits=n_splits, shuffle=True, random_state=SEED)
+    sgkf = StratifiedGroupKFold(n_splits=n_splits, shuffle=True, random_state=cfg.seed)
 
     oof = np.zeros(len(train))
     preds = np.zeros(len(test))
@@ -66,11 +68,12 @@ def train_and_predict(
             tqdm_folds.set_description(f"Fold {fold_num}/{n_splits} prepare")
             X_tr, X_va, X_te = build_fold_matrices(
                 train, test, tr_idx, val_idx, num_feats_train, num_feats_test,
+                cfg=cfg.feature,
             )
             if use_cache:
                 _save_fold_cache(cache_dir, fold_num, X_tr, X_va, X_te)
 
-        model = make_xgb_classifier(y[tr_idx])
+        model = make_xgb_classifier(y[tr_idx], cfg=cfg.model)
         tqdm_folds.set_description(f"Fold {fold_num}/{n_splits} train")
         model.fit(
             X_tr,

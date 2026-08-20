@@ -4,7 +4,13 @@ import sys
 import warnings
 from pathlib import Path
 
-from dacon.config import DEFAULT_CACHE_DIR, DEFAULT_DATA_DIR, DEFAULT_MODELS_DIR, DEFAULT_OUTPUT_PATH
+from dacon.config import (
+    DEFAULT_CACHE_DIR,
+    DEFAULT_DATA_DIR,
+    DEFAULT_MODELS_DIR,
+    DEFAULT_OUTPUT_PATH,
+    TrainConfig,
+)
 from dacon.submission import save_submission
 from dacon.training import seed_everything, train_and_predict
 
@@ -26,11 +32,12 @@ def parse_args() -> argparse.Namespace:
 def main() -> None:
     args = parse_args()
     seed_everything()
+    cfg = TrainConfig(n_splits=args.n_splits)
     preds = train_and_predict(
         args.data_dir,
-        args.n_splits,
         models_dir=args.models_dir,
         cache_dir=args.cache_dir,
+        cfg=cfg,
         use_cache=not args.no_cache,
     )
     save_submission(args.data_dir, args.output, preds)
