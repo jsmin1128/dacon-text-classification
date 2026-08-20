@@ -15,13 +15,22 @@ DEFAULT_CACHE_DIR = PROJECT_ROOT / "outputs" / "cache"
 class FeatureConfig:
     """TF-IDF 피처 설정. 기본값은 RTX 3090(24GB) GPU 학습에 맞춘 실측 최적값."""
 
-    char_ngram: tuple[int, int] = (3, 5)
+    # (3,5)->(3,4): 5gram이 빌드 RAM/시간의 대부분을 먹으면서 정확도 기여는 거의 없었다.
+    # fold-1 실측: 빌드 피크RAM 23.9GB->10.7GB, 빌드 539s->314s, AUC 0.99807->0.99804(동일 수준).
+    char_ngram: tuple[int, int] = (3, 4)
     # 200K -> 50K: 넓은 sparse를 XGBoost GPU DMatrix/histogram이 감당하도록 축소.
     char_max_features: int = 50_000
     char_min_df: int = 3
     word_ngram: tuple[int, int] = (1, 2)
     word_max_features: int = 20_000
     word_min_df: int = 2
+
+    # 실험용 대안 경로: HashingVectorizer는 어휘 dict가 없어 빌드는 빠르지만, 저빈도 ngram을
+    # 안 버려 행렬 밀도(nnz/row)가 2~3배 높아진다. 그 결과 GPU DMatrix가 커져 이 프로젝트(3090)
+    # 에선 OOM나거나 max_bin을 낮춰야 하고 그러면 학습이 느려지고 AUC도 떨어졌다(실측).
+    # 그래서 기본은 False. CPU/선형모델로 갈 때만 켜볼 것.
+    use_hashing: bool = False
+    char_hash_features: int = 2**16
 
 
 @dataclass

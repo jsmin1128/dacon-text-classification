@@ -1,7 +1,11 @@
 import numpy as np
 import pandas as pd
 from scipy import sparse
-from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.feature_extraction.text import (
+    HashingVectorizer,
+    TfidfTransformer,
+    TfidfVectorizer,
+)
 from sklearn.preprocessing import StandardScaler
 
 from dacon.config import FeatureConfig
@@ -48,6 +52,36 @@ def make_tfidf_vectorizers(
     return char_tfidf, word_tfidf
 
 
+def _build_char_features(
+    cfg: FeatureConfig,
+    tr_texts: np.ndarray,
+    va_texts: np.ndarray,
+    te_texts: np.ndarray,
+) -> tuple[sparse.csr_matrix, sparse.csr_matrix, sparse.csr_matrix]:
+    """char n-gram 피처. use_hashing이면 어휘 dict 없이 해싱으로 빌드(RAM/속도↓)."""
+    if not cfg.use_hashing:
+        char_tfidf, _ = make_tfidf_vectorizers(cfg)
+        return (
+            char_tfidf.fit_transform(tr_texts),
+            char_tfidf.transform(va_texts),
+            char_tfidf.transform(te_texts),
+        )
+
+    hasher = HashingVectorizer(
+        analyzer="char",
+        ngram_range=cfg.char_ngram,
+        n_features=cfg.char_hash_features,
+        alternate_sign=False,  # 음수 항 방지 -> 이후 IDF 가중과 XGBoost에 적합
+        norm=None,  # 정규화는 TfidfTransformer가 담당
+        dtype=np.float32,
+    )
+    tfidf = TfidfTransformer()  # IDF 가중을 유지해 기존 TfidfVectorizer에 근접
+    X_char_tr = tfidf.fit_transform(hasher.transform(tr_texts))
+    X_char_va = tfidf.transform(hasher.transform(va_texts))
+    X_char_te = tfidf.transform(hasher.transform(te_texts))
+    return X_char_tr, X_char_va, X_char_te
+
+
 def build_fold_matrices(
     train: pd.DataFrame,
     test: pd.DataFrame,
@@ -57,13 +91,17 @@ def build_fold_matrices(
     num_feats_test: pd.DataFrame,
     cfg: FeatureConfig | None = None,
 ) -> tuple[sparse.csr_matrix, sparse.csr_matrix, sparse.csr_matrix]:
+    cfg = cfg or FeatureConfig()
     tr_df, val_df = train.iloc[tr_idx], train.iloc[val_idx]
-    char_tfidf, word_tfidf = make_tfidf_vectorizers(cfg)
+    _, word_tfidf = make_tfidf_vectorizers(cfg)
     scaler = StandardScaler(with_mean=False)
 
-    X_char_tr = char_tfidf.fit_transform(concat_title_text(tr_df))
-    X_char_va = char_tfidf.transform(concat_title_text(val_df))
-    X_char_te = char_tfidf.transform(concat_title_text(test))
+    X_char_tr, X_char_va, X_char_te = _build_char_features(
+        cfg,
+        concat_title_text(tr_df),
+        concat_title_text(val_df),
+        concat_title_text(test),
+    )
 
     X_word_tr = word_tfidf.fit_transform(tr_df["full_text"])
     X_word_va = word_tfidf.transform(val_df["full_text"])

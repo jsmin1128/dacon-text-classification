@@ -27,7 +27,10 @@
       "Bash(ssh -o BatchMode=yes -o ConnectTimeout=5 -T git@github.com)",
       "Bash(gh auth *)",
       "Bash(.venv/bin/python scripts/train_tfidf_xgb.py --help)",
-      "Bash(git commit -m 'Centralize hyperparameters into config dataclasses *)"
+      "Bash(git commit -m 'Centralize hyperparameters into config dataclasses *)",
+      "Bash(ls *)",
+      "Bash(.venv/bin/python -c \"from dacon.config import FeatureConfig as F; c=F\\(\\); print\\('char_ngram=',c.char_ngram,'use_hashing=',c.use_hashing\\)\")",
+      "Bash(git commit -m 'Cut TF-IDF ngram to \\(3,4\\) to halve feature-build memory *)"
     ]
   }
 }
