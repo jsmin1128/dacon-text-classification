@@ -6,7 +6,7 @@ from pathlib import Path
 import numpy as np
 from scipy import sparse
 from sklearn.metrics import roc_auc_score
-from sklearn.model_selection import StratifiedGroupKFold
+from sklearn.model_selection import StratifiedKFold
 from tqdm.auto import tqdm
 
 from dacon.config import SEED, TrainConfig
@@ -47,12 +47,14 @@ def train_and_predict(
     num_feats_test = length_feats(test)
 
     y = train["generated"].values
-    groups = train["title"].fillna("").values
-    sgkf = StratifiedGroupKFold(n_splits=n_splits, shuffle=True, random_state=cfg.seed)
+    # title이 전 행에서 고유(97172/97172)라 그룹 분할은 무의미했다(그룹이 전부 크기 1).
+    # 8.23% 양성 클래스의 폴드간 균형을 위해 StratifiedKFold로 직접 층화한다.
+    # (문서가 반복되거나 title이 문단을 묶는 데이터로 바뀌면 GroupKFold 재검토.)
+    skf = StratifiedKFold(n_splits=n_splits, shuffle=True, random_state=cfg.seed)
 
     oof = np.zeros(len(train))
     preds = np.zeros(len(test))
-    splits = list(sgkf.split(train, y, groups))
+    splits = list(skf.split(train, y))
     tqdm_folds = tqdm(splits, desc="Folds")
 
     models_dir.mkdir(parents=True, exist_ok=True)
