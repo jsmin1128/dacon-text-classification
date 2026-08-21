@@ -1,6 +1,5 @@
 import argparse
 import logging
-import sys
 import warnings
 from pathlib import Path
 
@@ -11,10 +10,11 @@ from dacon.config import (
     DEFAULT_OUTPUT_PATH,
     TrainConfig,
 )
+from dacon.logging_setup import setup_logging
 from dacon.submission import save_submission
 from dacon.training import seed_everything, train_and_predict
 
-logging.basicConfig(stream=sys.stdout, level=logging.INFO, format="%(message)s")
+setup_logging()
 warnings.filterwarnings("ignore")
 
 

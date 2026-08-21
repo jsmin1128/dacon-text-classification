@@ -5,8 +5,6 @@ from dacon.config import SEED, ModelConfig
 
 
 def make_xgb_classifier(y: np.ndarray, cfg: ModelConfig | None = None) -> XGBClassifier:
-    # 모든 하이퍼파라미터는 ModelConfig에서 관리한다.
-    # max_bin/max_depth가 3090 GPU OOM을 좌우하는 근거는 config.py 및 메모리 참고.
     cfg = cfg or ModelConfig.from_env()
     pos_w = (y == 0).sum() / (y == 1).sum()
     return XGBClassifier(

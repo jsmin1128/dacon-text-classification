@@ -32,7 +32,6 @@ def concat_title_text(df: pd.DataFrame) -> np.ndarray:
 def make_tfidf_vectorizers(
     cfg: FeatureConfig | None = None,
 ) -> tuple[TfidfVectorizer, TfidfVectorizer]:
-    # 피처수/ngram/min_df는 전부 FeatureConfig에서 관리한다(GPU 메모리 근거는 config.py 참고).
     cfg = cfg or FeatureConfig()
     char_tfidf = TfidfVectorizer(
         analyzer="char",

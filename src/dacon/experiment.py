@@ -14,8 +14,7 @@ def log_experiment(
 ) -> dict:
     """실험 1회의 설정과 결과를 JSONL 한 줄로 append한다.
 
-    JSONL을 쓰는 이유: 실행마다 한 줄씩 안전하게 덧붙일 수 있고, config에 필드가
-    늘어도 과거 줄과 충돌하지 않는다. 나중에 pandas.read_json(lines=True)로 비교 가능.
+    config 필드가 늘어도 과거 줄과 충돌하지 않고, pandas.read_json(lines=True)로 비교할 수 있다.
     """
     record = {
         "time": datetime.now().isoformat(timespec="seconds"),

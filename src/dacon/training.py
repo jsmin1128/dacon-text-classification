@@ -92,7 +92,7 @@ def train_and_predict(
         val_pred = model.predict_proba(X_va)[:, 1]
         fold_auc = roc_auc_score(y[val_idx], val_pred)
         fold_aucs.append(fold_auc)
-        logging.info("  Fold %s AUC = %.5f", fold_num, fold_auc)
+        logging.info("Fold %s/%s AUC = %.5f", fold_num, n_splits, fold_auc)
 
         oof[val_idx] = val_pred
         preds += model.predict_proba(X_te)[:, 1] / n_splits
@@ -101,7 +101,7 @@ def train_and_predict(
         gc.collect()
 
     oof_auc = roc_auc_score(y, oof)
-    logging.info("\nALL FOLD OOF AUC = %.5f", oof_auc)
+    logging.info("ALL FOLD OOF AUC = %.5f", oof_auc)
 
     log_path = experiment_log or DEFAULT_EXPERIMENT_LOG
     log_experiment(cfg, fold_aucs, oof_auc, log_path)
