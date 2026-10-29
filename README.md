@@ -22,7 +22,7 @@ AI 생성 텍스트 판별(binary, AUC 평가) 대회용 학습/제출 파이프
 
 ## 데이터
 
-[Google Drive](https://drive.google.com/drive/folders/1RVRPvS0hFV637F2cD7aNigUj9R-_b7nT?usp=sharing)에서 받아 `data/raw/`에 둡니다.
+[Google Drive](https://drive.google.com/file/d/1CQjspMShUuBuuGgHKj38Lc4O5xi-sPH8/view?usp=sharing)에서 받아 `data/raw/`에 둡니다.
 
 ```text
 train.csv: title, full_text, generated
